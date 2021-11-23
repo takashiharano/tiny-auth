@@ -56,7 +56,7 @@ public class Auth {
 
   private String passFilePath;
   private String hashAlgorithm = "SHA-256";
-  private int stretching = 0;
+  private int stretchingN = 0;
 
   /**
    * Initializes the module with the file path.
@@ -86,12 +86,12 @@ public class Auth {
    *
    * @param filePath
    *          the path of the user password file
-   * @param stretching
+   * @param stretchingN
    *          number of times to stretch
    */
-  public Auth(String filePath, int stretching) {
+  public Auth(String filePath, int stretchingN) {
     this.passFilePath = filePath;
-    this.stretching = stretching;
+    this.stretchingN = stretchingN;
   }
 
   /**
@@ -102,13 +102,13 @@ public class Auth {
    *          the path of the user password file
    * @param algorithm
    *          hash algorithm
-   * @param stretching
+   * @param stretchingN
    *          number of times to stretch
    */
-  public Auth(String filePath, String algorithm, int stretching) {
+  public Auth(String filePath, String algorithm, int stretchingN) {
     this.passFilePath = filePath;
     this.hashAlgorithm = algorithm;
-    this.stretching = stretching;
+    this.stretchingN = stretchingN;
   }
 
   /**
@@ -116,8 +116,9 @@ public class Auth {
    *
    * @param id
    *          user id
-   * @param pass
-   *          hash value. hash(pass + id), non-stretched.
+   * @param hash
+   *          hash value. hash(pass + id), non-stretched. the value must be lower
+   *          case.
    * @return Result status. The caller of this method would be better to make no
    *         distinction the error status except for debugging.
    */
@@ -138,8 +139,7 @@ public class Auth {
       String uid = fields[0];
       String userHash = fields[1];
       if (uid.equals(id)) {
-        String stretchedHash = stretch(hash, stretching);
-        stretchedHash = stretchedHash.toLowerCase();
+        String stretchedHash = stretch(hash, stretchingN);
         userHash = userHash.toLowerCase();
         if (stretchedHash.equals(userHash)) {
           return "OK";
@@ -177,7 +177,7 @@ public class Auth {
    *          non-stretched hash. hash(pass + id)
    */
   public void register(String id, String hash) {
-    hash = stretch(hash, stretching);
+    hash = stretch(hash, stretchingN);
     String newRecord = id + DELIMITER + hash;
     String[] records;
     try {
