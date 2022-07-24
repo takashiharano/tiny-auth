@@ -5,7 +5,7 @@ public class AuthTest {
   private static Auth auth;
 
   public static void main(String args[]) {
-    String filePath = "C:/test/pass.txt";
+    String filePath = "C:/tmp/pass.txt";
     String algorithm = "SHA-256";
     int stretching;
 
@@ -59,14 +59,14 @@ public class AuthTest {
     user = "user1";
     pass = "1111";
     salt = user;
-    hash = auth.getHash(pass, salt);
+    hash = auth.getHashString(pass, salt);
     log("hash = " + hash);
     log("OK:" + auth.auth(user, hash));
 
     user = "user2";
     pass = "2222";
     salt = user;
-    hash = auth.getHash(pass);
+    hash = auth.getHashString(pass);
     log("hash = " + hash);
     log("OK:" + auth.auth(user, hash));
 
@@ -74,7 +74,7 @@ public class AuthTest {
     pass = "0000";
     salt = user;
     auth.registerByPlainPass(user, pass);
-    hash = auth.getHash(pass, salt);
+    hash = auth.getHashString(pass, salt);
     log("hash = " + hash);
     log("OK:" + auth.auth(user, hash));
 
@@ -83,31 +83,31 @@ public class AuthTest {
     user = "user1";
     pass = "2222";
     salt = user;
-    hash = auth.getHash(pass, salt);
+    hash = auth.getHashString(pass, salt);
     log("hash = " + hash);
-    log("NG:" + auth.auth(user, hash));
+    log("PASSWORD_MISMATCH:" + auth.auth(user, hash));
 
     user = "user2";
     pass = "1111";
     salt = user;
-    hash = auth.getHash(pass);
+    hash = auth.getHashString(pass);
     log("hash = " + hash);
-    log("NG:" + auth.auth(user, hash));
+    log("PASSWORD_MISMATCH" + auth.auth(user, hash));
 
     // Update/NG
     pass = "1111";
     salt = user;
     auth.registerByPlainPass(user, pass);
-    hash = auth.getHash("0000", salt);
+    hash = auth.getHashString("0000", salt);
     log("hash = " + hash);
-    log("OK:" + auth.auth(user, hash));
+    log("PASSWORD_MISMATCH:" + auth.auth(user, hash));
 
     // NO_SUCH_USER
     log("");
     user = "user3";
     pass = "3333";
     salt = user;
-    hash = auth.getHash(pass, salt);
+    hash = auth.getHashString(pass, salt);
     log("hash = " + hash);
     log("NO_SUCH_USER:" + auth.auth(user, hash));
   }

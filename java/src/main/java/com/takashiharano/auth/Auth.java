@@ -51,12 +51,13 @@ import javax.xml.bind.DatatypeConverter;
  */
 public class Auth {
 
-  private static final String LINE_SEPARATOR = System.lineSeparator();
+  private static final String LINE_SEPARATOR = "\n";
   private static final String DELIMITER = "\t";
+  private static final Charset ENCODING = StandardCharsets.UTF_8;
 
   private String passFilePath;
   private String hashAlgorithm = "SHA-256";
-  private int stretchingN = 0;
+  private int stretchingN;
 
   /**
    * Initializes the module with the file path.
@@ -119,15 +120,15 @@ public class Auth {
    * @param hash
    *          hash value. hash(pass + id), non-stretched. the value must be lower
    *          case.
-   * @return Result status. The caller of this method would be better to make no
-   *         distinction the error status except for debugging.
+   * @return Result status. The caller of this method should not distinguish the
+   *         error status except for debugging.
    */
   public String auth(String id, String hash) {
     String[] records;
     try {
       records = loadPasswordFile();
     } catch (IOException e) {
-      return "LOAD_USER_FILE_ERROR";
+      return "USER_FILE_LOAD_ERROR";
     }
 
     for (int i = 0; i < records.length; i++) {
@@ -137,14 +138,12 @@ public class Auth {
         continue;
       }
       String uid = fields[0];
-      String userHash = fields[1];
       if (uid.equals(id)) {
-        String stretchedHash = stretch(hash, stretchingN);
-        userHash = userHash.toLowerCase();
-        if (stretchedHash.equals(userHash)) {
+        String userHash = fields[1];
+        if (checkHash(hash, userHash, stretchingN)) {
           return "OK";
         } else {
-          return "NG";
+          return "PASSWORD_MISMATCH";
         }
       }
     }
@@ -163,7 +162,7 @@ public class Auth {
    *         distinction the error status except for debugging.
    */
   public String authByPlainPass(String id, String pass) {
-    String hash = getHash(pass, id);
+    String hash = getHashString(pass, id);
     return auth(id, hash);
   }
 
@@ -231,7 +230,7 @@ public class Auth {
    *          salt for hash. Set "" not to use.
    */
   public void registerByPlainPass(String id, String pass, String salt) {
-    String hash = getHash(pass, salt);
+    String hash = getHashString(pass, salt);
     register(id, hash);
   }
 
@@ -276,10 +275,11 @@ public class Auth {
    *          input string
    * @return hash value
    */
-  public String getHash(String input) {
-    byte[] b = input.getBytes(StandardCharsets.UTF_8);
-    String hash = getHash(b, hashAlgorithm);
-    return hash.toLowerCase();
+  public String getHashString(String input) {
+    byte[] b = input.getBytes(ENCODING);
+    byte[] hash = getHashBytes(b, hashAlgorithm);
+    String hashString = DatatypeConverter.printHexBinary(hash);
+    return hashString.toLowerCase();
   }
 
   /***
@@ -291,8 +291,8 @@ public class Auth {
    *          salt value
    * @return hash value
    */
-  public String getHash(String input, String salt) {
-    return getHash(input + salt);
+  public String getHashString(String input, String salt) {
+    return getHashString(input + salt);
   }
 
   /**
@@ -307,9 +307,86 @@ public class Auth {
   public String stretch(String src, int n) {
     String hash = src;
     for (int i = 0; i < n; i++) {
-      hash = getHash(hash);
+      hash = getHashString(hash);
     }
     return hash;
+  }
+
+  /**
+   * Returns the password file path.
+   *
+   * @return the password file path
+   */
+  public String getPassFilePath() {
+    return passFilePath;
+  }
+
+  /**
+   * Sets the password file path.
+   *
+   * @param passFilePath
+   *          the password file path
+   */
+  public void setPassFilePath(String passFilePath) {
+    this.passFilePath = passFilePath;
+  }
+
+  /**
+   * Returns the hash algorithm.
+   *
+   * @return the hash algorithm
+   */
+  public String getHashAlgorithm() {
+    return hashAlgorithm;
+  }
+
+  /**
+   * Sets the hash algorithm.
+   *
+   * @param hashAlgorithm
+   *          the hash algorithm
+   */
+  public void setHashAlgorithm(String hashAlgorithm) {
+    this.hashAlgorithm = hashAlgorithm;
+  }
+
+  /**
+   * Returns the number of stretching.
+   *
+   * @return the number of stretching
+   */
+  public int getStretchingN() {
+    return stretchingN;
+  }
+
+  /**
+   * Sets the number of stretching.
+   *
+   * @param stretchingN
+   *          the number of stretching
+   */
+  public void setStretchingN(int stretchingN) {
+    this.stretchingN = stretchingN;
+  }
+
+  /**
+   * Returns whether the hash values match.
+   *
+   * @param inputHash
+   *          input hash
+   * @param userHash
+   *          user hash
+   * @param stretchingN
+   *          number of stretching
+   * @return true if the hash values match; false otherwise
+   */
+  private boolean checkHash(String inputHash, String userHash, int stretchingN) {
+    String stretchedHash = stretch(inputHash, stretchingN);
+    userHash = userHash.toLowerCase();
+    if (stretchedHash.equals(userHash)) {
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -321,12 +398,11 @@ public class Auth {
    *          hash algorithm (MD5 / SHA-1 / SHA-256 / SHA-512)
    * @return hash value
    */
-  private String getHash(byte[] input, String algorithm) {
-    String hash = null;
+  private byte[] getHashBytes(byte[] input, String algorithm) {
+    byte[] hash = null;
     try {
       MessageDigest md = MessageDigest.getInstance(algorithm);
-      byte[] b = md.digest(input);
-      hash = DatatypeConverter.printHexBinary(b);
+      hash = md.digest(input);
     } catch (NoSuchAlgorithmException e) {
       e.printStackTrace();
     }
@@ -370,7 +446,7 @@ public class Auth {
    */
   private String[] readTextFileAsArray(String path) throws IOException {
     Path file = Paths.get(path);
-    List<String> lines = Files.readAllLines(file, Charset.forName("UTF-8"));
+    List<String> lines = Files.readAllLines(file, ENCODING);
     String[] text = new String[lines.size()];
     lines.toArray(text);
     return text;
