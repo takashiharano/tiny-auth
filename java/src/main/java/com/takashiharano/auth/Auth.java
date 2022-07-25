@@ -42,10 +42,10 @@ import javax.xml.bind.DatatypeConverter;
  * TinyAuth
  *
  * register:<br>
- * register(id, hash(pass + id)) : id,stretch(hash) into the file.<br>
+ * register(user, hash(pass + user)) : user,stretch(hash) into the file.<br>
  * <br>
  * authentication:<br>
- * auth(id, hash(pass + id)) : stretch(hash) == stored hash ?
+ * auth(user, hash(pass + user)) : stretch(hash) == stored hash ?
  *
  * Available hash algorithms: MD5, SHA-1, SHA-256 (default), SHA-512
  */
@@ -115,15 +115,15 @@ public class Auth {
   /**
    * Authentication.
    *
-   * @param id
+   * @param user
    *          user id
    * @param hash
-   *          hash value. hash(pass + id), non-stretched. the value must be lower
-   *          case.
+   *          hash value. hash(pass + user), non-stretched. the value must be
+   *          lower case.
    * @return Result status. The caller of this method should not distinguish the
    *         error status except for debugging.
    */
-  public String auth(String id, String hash) {
+  public String auth(String user, String hash) {
     String[] records;
     try {
       records = loadPasswordFile();
@@ -138,7 +138,7 @@ public class Auth {
         continue;
       }
       String uid = fields[0];
-      if (uid.equals(id)) {
+      if (uid.equals(user)) {
         String userHash = fields[1];
         if (checkHash(hash, userHash, stretchingN)) {
           return "OK";
@@ -154,30 +154,30 @@ public class Auth {
   /**
    * Authenticate with a plain text password.
    *
-   * @param id
+   * @param user
    *          user id
    * @param pass
    *          password
    * @return Result status. The caller of this method would be better to make no
    *         distinction the error status except for debugging.
    */
-  public String authByPlainPass(String id, String pass) {
-    String hash = getHashString(pass, id);
-    return auth(id, hash);
+  public String authByPlainPass(String user, String pass) {
+    String hash = getHashString(pass, user);
+    return auth(user, hash);
   }
 
   /**
    * Register a password.<br>
    * The given hash will be stretched before save to the file.
    *
-   * @param id
+   * @param user
    *          target user id
    * @param hash
-   *          non-stretched hash. hash(pass + id)
+   *          non-stretched hash. hash(pass + user)
    */
-  public void register(String id, String hash) {
+  public void register(String user, String hash) {
     hash = stretch(hash, stretchingN);
-    String newRecord = id + DELIMITER + hash;
+    String newRecord = user + DELIMITER + hash;
     String[] records;
     try {
       records = loadPasswordFile();
@@ -191,7 +191,7 @@ public class Auth {
       String record = records[i];
       String[] fields = record.split(DELIMITER);
       String uid = fields[0];
-      if (uid.equals(id)) {
+      if (uid.equals(user)) {
         found = true;
         sb.append(newRecord + LINE_SEPARATOR);
       } else {
@@ -210,38 +210,38 @@ public class Auth {
   /**
    * Register a password with plain text.
    *
-   * @param id
+   * @param user
    *          target user id
    * @param pass
    *          plain text password
    */
-  public void registerByPlainPass(String id, String pass) {
-    registerByPlainPass(id, pass, id);
+  public void registerByPlainPass(String user, String pass) {
+    registerByPlainPass(user, pass, user);
   }
 
   /**
    * Register a password with plain text.
    *
-   * @param id
+   * @param user
    *          target user id
    * @param pass
    *          plain text password
    * @param salt
    *          salt for hash. Set "" not to use.
    */
-  public void registerByPlainPass(String id, String pass, String salt) {
+  public void registerByPlainPass(String user, String pass, String salt) {
     String hash = getHashString(pass, salt);
-    register(id, hash);
+    register(user, hash);
   }
 
   /**
    * Remove a user record.
    *
-   * @param id
+   * @param user
    *          user id
    * @return true if the target is successfully deleted; false otherwise
    */
-  public boolean remove(String id) {
+  public boolean remove(String user) {
     String[] records;
     try {
       records = loadPasswordFile();
@@ -255,7 +255,7 @@ public class Auth {
       String record = records[i];
       String[] fields = record.split(DELIMITER);
       String uid = fields[0];
-      if (uid.equals(id)) {
+      if (uid.equals(user)) {
         deleted = true;
       } else {
         sb.append(record + LINE_SEPARATOR);
@@ -424,10 +424,8 @@ public class Auth {
   /**
    * Save user password file.
    *
-   * @param id
-   *          target id
-   * @param hash
-   *          hash value
+   * @param records
+   *          the records to save
    */
   private void savePasswordFile(String records) {
     try {
