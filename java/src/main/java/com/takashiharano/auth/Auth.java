@@ -235,13 +235,13 @@ public class Auth {
   }
 
   /**
-   * Delete a user record.
+   * Remove a user record.
    *
    * @param id
    *          user id
    * @return true if the target is successfully deleted; false otherwise
    */
-  public boolean deleteUser(String id) {
+  public boolean remove(String id) {
     String[] records;
     try {
       records = loadPasswordFile();

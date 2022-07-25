@@ -43,7 +43,7 @@ public class AuthTest {
   private static void deleteTest(String[] userIds) {
     for (int i = 0; i < userIds.length; i++) {
       String id = userIds[i];
-      auth.deleteUser(id);
+      auth.remove(id);
     }
   }
 
