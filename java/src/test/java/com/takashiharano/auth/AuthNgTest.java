@@ -56,13 +56,13 @@ public class AuthNgTest {
     String salt;
 
     // NG
-    log("");
     user = "user1";
     pass = "2222";
     salt = user;
     hash = auth.getHashString(pass, salt);
     log("hash = " + hash);
     log("PASSWORD_MISMATCH:" + auth.auth(user, hash));
+    log("");
 
     user = "user2";
     pass = "1111";
@@ -70,6 +70,7 @@ public class AuthNgTest {
     hash = auth.getHashString(pass);
     log("hash = " + hash);
     log("PASSWORD_MISMATCH" + auth.auth(user, hash));
+    log("");
 
     // Update/NG
     pass = "1111";
@@ -78,15 +79,7 @@ public class AuthNgTest {
     hash = auth.getHashString("0000", salt);
     log("hash = " + hash);
     log("PASSWORD_MISMATCH:" + auth.auth(user, hash));
-
-    // NO_SUCH_USER
     log("");
-    user = "user3";
-    pass = "3333";
-    salt = user;
-    hash = auth.getHashString(pass, salt);
-    log("hash = " + hash);
-    log("NO_SUCH_USER:" + auth.auth(user, hash));
   }
 
   public static void log(String msg) {

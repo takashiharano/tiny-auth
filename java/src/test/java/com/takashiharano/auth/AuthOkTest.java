@@ -38,6 +38,11 @@ public class AuthOkTest {
   private static void register() {
     auth.registerByPlainPass("user1", "1111");
     auth.registerByPlainPass("user2", "2222", "");
+
+    // String user = "user2";
+    // String pass = "2222";
+    // String hash = auth.getHashString(pass);
+    // auth.register(user, hash);
   }
 
   private static void remove(String[] userIds) {
