@@ -173,9 +173,13 @@ public class Auth {
    * @param user
    *          target user id
    * @param hash
-   *          non-stretched hash. hash(pass + user)
+   *          non-stretched hash. hash(pass + user as salt)
+   * @return 0=added / 1=updated / -1=error
    */
-  public void register(String user, String hash) {
+  public int register(String user, String hash) {
+    if ((user == null) || (hash == null)) {
+      return -1;
+    }
     hash = stretch(hash, stretchingN);
     String newRecord = user + DELIMITER + hash;
     String[] records;
@@ -186,25 +190,33 @@ public class Auth {
     }
 
     StringBuilder sb = new StringBuilder();
-    boolean found = false;
+    int result = 0;
     for (int i = 0; i < records.length; i++) {
       String record = records[i];
       String[] fields = record.split(DELIMITER);
       String uid = fields[0];
       if (uid.equals(user)) {
-        found = true;
+        result = 1;
         sb.append(newRecord + LINE_SEPARATOR);
       } else {
         sb.append(record + LINE_SEPARATOR);
       }
     }
 
-    if (!found) {
+    if (result == 0) {
       sb.append(newRecord + LINE_SEPARATOR);
     }
 
     String newRecords = sb.toString();
-    savePasswordFile(newRecords);
+
+    try {
+      savePasswordFile(newRecords);
+    } catch (IOException ioe) {
+      result = -1;
+      ioe.printStackTrace();
+    }
+
+    return result;
   }
 
   /**
@@ -214,9 +226,10 @@ public class Auth {
    *          target user id
    * @param pass
    *          plain text password
+   * @return 0=added / 1=updated / -1=error
    */
-  public void registerByPlainPass(String user, String pass) {
-    registerByPlainPass(user, pass, user);
+  public int registerByPlainPass(String user, String pass) {
+    return registerByPlainPass(user, pass, user);
   }
 
   /**
@@ -228,10 +241,11 @@ public class Auth {
    *          plain text password
    * @param salt
    *          salt for hash. Set "" not to use.
+   * @return 0=added / 1=updated / -1=error
    */
-  public void registerByPlainPass(String user, String pass, String salt) {
+  public int registerByPlainPass(String user, String pass, String salt) {
     String hash = getHashString(pass, salt);
-    register(user, hash);
+    return register(user, hash);
   }
 
   /**
@@ -263,7 +277,12 @@ public class Auth {
     }
 
     String newRecords = sb.toString();
-    savePasswordFile(newRecords);
+    try {
+      savePasswordFile(newRecords);
+    } catch (IOException ioe) {
+      deleted = false;
+      ioe.printStackTrace();
+    }
 
     return deleted;
   }
@@ -277,9 +296,15 @@ public class Auth {
    */
   public String getHashString(String input) {
     byte[] b = input.getBytes(ENCODING);
-    byte[] hash = getHashBytes(b, hashAlgorithm);
-    String hashString = DatatypeConverter.printHexBinary(hash);
-    return hashString.toLowerCase();
+    String hashString = null;
+    try {
+      byte[] hash = getHashBytes(b, hashAlgorithm);
+      hashString = DatatypeConverter.printHexBinary(hash);
+      hashString = hashString.toLowerCase();
+    } catch (NoSuchAlgorithmException e) {
+      e.printStackTrace();
+    }
+    return hashString;
   }
 
   /***
@@ -397,15 +422,13 @@ public class Auth {
    * @param algorithm
    *          hash algorithm (MD5 / SHA-1 / SHA-256 / SHA-512)
    * @return hash value
+   * @throws NoSuchAlgorithmException
+   *           if no Provider supports aMessageDigestSpi implementation for the
+   *           specified algorithm.
    */
-  private byte[] getHashBytes(byte[] input, String algorithm) {
-    byte[] hash = null;
-    try {
-      MessageDigest md = MessageDigest.getInstance(algorithm);
-      hash = md.digest(input);
-    } catch (NoSuchAlgorithmException e) {
-      e.printStackTrace();
-    }
+  private byte[] getHashBytes(byte[] input, String algorithm) throws NoSuchAlgorithmException {
+    MessageDigest md = MessageDigest.getInstance(algorithm);
+    byte[] hash = md.digest(input);
     return hash;
   }
 
@@ -426,13 +449,11 @@ public class Auth {
    *
    * @param records
    *          the records to save
+   * @throws IOException
+   *           if I/O error occurs
    */
-  private void savePasswordFile(String records) {
-    try {
-      writeFile(passFilePath, records);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+  private void savePasswordFile(String records) throws IOException {
+    writeFile(passFilePath, records);
   }
 
   /**
