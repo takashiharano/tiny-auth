@@ -1,6 +1,8 @@
-package com.takashiharano.auth;
+package com.libutil.auth.test;
 
-public class AuthOkTest {
+import com.libutil.auth.Auth;
+
+public class AuthTest {
 
   private static Auth auth;
 
@@ -12,10 +14,7 @@ public class AuthOkTest {
     auth = TestManager.initAuth();
 
     authByPlainPass("user1", "1111");
-    authByPlainPass("user2", "2222");
-
     authByHash("user1", "1111");
-    authByHash("user2", "2222");
   }
 
   private static void authByPlainPass(String user, String pass) {

@@ -1,6 +1,6 @@
-package com.takashiharano.auth.tools;
+package com.libutil.auth.test.tools;
 
-import com.takashiharano.auth.Auth;
+import com.libutil.auth.Auth;
 
 public class HashGenerator {
 

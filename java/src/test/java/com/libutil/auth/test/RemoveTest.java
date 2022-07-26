@@ -1,4 +1,6 @@
-package com.takashiharano.auth;
+package com.libutil.auth.test;
+
+import com.libutil.auth.Auth;
 
 public class RemoveTest {
 

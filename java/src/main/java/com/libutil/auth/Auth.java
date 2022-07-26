@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.takashiharano.auth;
+package com.libutil.auth;
 
 import java.io.BufferedWriter;
 import java.io.File;
