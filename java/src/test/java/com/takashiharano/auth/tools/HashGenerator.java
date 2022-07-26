@@ -13,7 +13,7 @@ public class HashGenerator {
   private static void test() {
     String filePath = "C:/tmp/pass.txt";
     String hashAlgorithm = "SHA-256";
-    int stretching = 0;
+    int stretching = 1;
     auth = new Auth(filePath, hashAlgorithm, stretching);
 
     String user = "root";
