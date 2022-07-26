@@ -41,11 +41,16 @@ import javax.xml.bind.DatatypeConverter;
 /**
  * TinyAuth
  *
- * register:<br>
- * register(user, hash(pass + user)) : user,stretch(hash) into the file.<br>
- * <br>
- * authentication:<br>
- * auth(user, hash(pass + user)) : stretch(hash) == stored hash ?
+ * <pre>
+ * Registration:
+ *   register(user, hash(user + pass))
+ *     hash = stretch(hash, n)
+ *     user,hash will be stored into the file.
+ *
+ * Authentication:
+ *   auth(user, hash(pass + user))
+ *     stretch(hash) == registered hash ?
+ * </pre>
  *
  * Available hash algorithms: MD5, SHA-1, SHA-256 (default), SHA-512
  */
