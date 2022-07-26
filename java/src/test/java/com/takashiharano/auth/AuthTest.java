@@ -1,6 +1,6 @@
 package com.takashiharano.auth;
 
-public class AuthNgTest {
+public class AuthTest {
 
   private static Auth auth;
 
@@ -11,11 +11,8 @@ public class AuthNgTest {
   public static void test() {
     auth = TestManager.initAuth();
 
-    authByPlainPass("user1", "2222");
-    authByPlainPass("user2", "1111");
-
-    authByHash("user1", "2222");
-    authByHash("user2", "1111");
+    authByPlainPass("user1", "1111");
+    authByHash("user1", "1111");
   }
 
   private static void authByPlainPass(String user, String pass) {

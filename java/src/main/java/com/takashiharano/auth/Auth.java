@@ -57,7 +57,7 @@ public class Auth {
 
   private String passFilePath;
   private String hashAlgorithm = "SHA-256";
-  private int stretchingN;
+  private int stretching;
 
   /**
    * Initializes the module with the file path.
@@ -87,12 +87,12 @@ public class Auth {
    *
    * @param filePath
    *          the path of the user password file
-   * @param stretchingN
+   * @param stretching
    *          number of times to stretch
    */
-  public Auth(String filePath, int stretchingN) {
+  public Auth(String filePath, int stretching) {
     this.passFilePath = filePath;
-    this.stretchingN = stretchingN;
+    this.stretching = stretching;
   }
 
   /**
@@ -103,13 +103,13 @@ public class Auth {
    *          the path of the user password file
    * @param algorithm
    *          hash algorithm
-   * @param stretchingN
+   * @param stretching
    *          number of times to stretch
    */
-  public Auth(String filePath, String algorithm, int stretchingN) {
+  public Auth(String filePath, String algorithm, int stretching) {
     this.passFilePath = filePath;
     this.hashAlgorithm = algorithm;
-    this.stretchingN = stretchingN;
+    this.stretching = stretching;
   }
 
   /**
@@ -118,8 +118,8 @@ public class Auth {
    * @param user
    *          user id
    * @param hash
-   *          hash value. hash(pass + user), non-stretched. the value must be
-   *          lower case.
+   *          the hash string. hash(pass + user), non-stretched.<br>
+   *          it must be lower case.
    * @return Result status. The caller of this method should not distinguish the
    *         error status except for debugging.
    */
@@ -140,7 +140,7 @@ public class Auth {
       String uid = fields[0];
       if (uid.equals(user)) {
         String userHash = fields[1];
-        if (checkHash(hash, userHash, stretchingN)) {
+        if (checkHash(hash, userHash, stretching)) {
           return "OK";
         } else {
           return "PASSWORD_MISMATCH";
@@ -164,127 +164,6 @@ public class Auth {
   public String authByPlainPass(String user, String pass) {
     String hash = getHashString(pass, user);
     return auth(user, hash);
-  }
-
-  /**
-   * Register a password.<br>
-   * The given hash will be stretched before save to the file.
-   *
-   * @param user
-   *          target user id
-   * @param hash
-   *          non-stretched hash. hash(pass + user as salt)
-   * @return 0=added / 1=updated / -1=error
-   */
-  public int register(String user, String hash) {
-    if ((user == null) || (hash == null)) {
-      return -1;
-    }
-    hash = stretch(hash, stretchingN);
-    String newRecord = user + DELIMITER + hash;
-    String[] records;
-    try {
-      records = loadPasswordFile();
-    } catch (IOException e) {
-      records = new String[0];
-    }
-
-    StringBuilder sb = new StringBuilder();
-    int result = 0;
-    for (int i = 0; i < records.length; i++) {
-      String record = records[i];
-      String[] fields = record.split(DELIMITER);
-      String uid = fields[0];
-      if (uid.equals(user)) {
-        result = 1;
-        sb.append(newRecord + LINE_SEPARATOR);
-      } else {
-        sb.append(record + LINE_SEPARATOR);
-      }
-    }
-
-    if (result == 0) {
-      sb.append(newRecord + LINE_SEPARATOR);
-    }
-
-    String newRecords = sb.toString();
-
-    try {
-      savePasswordFile(newRecords);
-    } catch (IOException ioe) {
-      result = -1;
-      ioe.printStackTrace();
-    }
-
-    return result;
-  }
-
-  /**
-   * Register a password with plain text.
-   *
-   * @param user
-   *          target user id
-   * @param pass
-   *          plain text password
-   * @return 0=added / 1=updated / -1=error
-   */
-  public int registerByPlainPass(String user, String pass) {
-    return registerByPlainPass(user, pass, user);
-  }
-
-  /**
-   * Register a password with plain text.
-   *
-   * @param user
-   *          target user id
-   * @param pass
-   *          plain text password
-   * @param salt
-   *          salt for hash. Set "" not to use.
-   * @return 0=added / 1=updated / -1=error
-   */
-  public int registerByPlainPass(String user, String pass, String salt) {
-    String hash = getHashString(pass, salt);
-    return register(user, hash);
-  }
-
-  /**
-   * Remove a user record.
-   *
-   * @param user
-   *          user id
-   * @return true if the target is successfully deleted; false otherwise
-   */
-  public boolean remove(String user) {
-    String[] records;
-    try {
-      records = loadPasswordFile();
-    } catch (IOException e) {
-      return false;
-    }
-
-    StringBuilder sb = new StringBuilder();
-    boolean deleted = false;
-    for (int i = 0; i < records.length; i++) {
-      String record = records[i];
-      String[] fields = record.split(DELIMITER);
-      String uid = fields[0];
-      if (uid.equals(user)) {
-        deleted = true;
-      } else {
-        sb.append(record + LINE_SEPARATOR);
-      }
-    }
-
-    String newRecords = sb.toString();
-    try {
-      savePasswordFile(newRecords);
-    } catch (IOException ioe) {
-      deleted = false;
-      ioe.printStackTrace();
-    }
-
-    return deleted;
   }
 
   /**
@@ -321,19 +200,32 @@ public class Auth {
   }
 
   /**
-   * Stretches the hash.
+   * Returns a hash string for storage.
    *
-   * @param src
-   *          the source value
-   * @param n
-   *          number of times to stretch
-   * @return stretched value
+   * @param user
+   *          user id
+   * @param pass
+   *          the plain password
+   * @return a hash string. it may be stretched depending on the stretching value.
    */
-  public String stretch(String src, int n) {
-    String hash = src;
-    for (int i = 0; i < n; i++) {
-      hash = getHashString(hash);
-    }
+  public String getHashStringForStorage(String user, String pass) {
+    return getHashStringForStorage(user, pass, user);
+  }
+
+  /**
+   * Returns a hash string for storage.
+   *
+   * @param user
+   *          user id
+   * @param pass
+   *          the plain password
+   * @param salt
+   *          the salt
+   * @return a hash string. it may be stretched depending on the stretching value.
+   */
+  public String getHashStringForStorage(String user, String pass, String salt) {
+    String hash = getHashString(pass, salt);
+    hash = stretch(hash, stretching);
     return hash;
   }
 
@@ -380,18 +272,152 @@ public class Auth {
    *
    * @return the number of stretching
    */
-  public int getStretchingN() {
-    return stretchingN;
+  public int getStretching() {
+    return stretching;
   }
 
   /**
    * Sets the number of stretching.
    *
-   * @param stretchingN
+   * @param stretching
    *          the number of stretching
    */
-  public void setStretchingN(int stretchingN) {
-    this.stretchingN = stretchingN;
+  public void setStretching(int stretching) {
+    this.stretching = stretching;
+  }
+
+  /**
+   * Register a password with plain text.
+   *
+   * @param user
+   *          target user id
+   * @param pass
+   *          plain text password
+   * @return 0=added / 1=updated / -1=error
+   */
+  public int registerByPlainPass(String user, String pass) {
+    return registerByPlainPass(user, pass, user);
+  }
+
+  /**
+   * Register a password with plain text.
+   *
+   * @param user
+   *          target user id
+   * @param pass
+   *          plain text password
+   * @param salt
+   *          salt for hash. Set "" not to use.
+   * @return 0=added / 1=updated / -1=error
+   */
+  public int registerByPlainPass(String user, String pass, String salt) {
+    String hash = getHashStringForStorage(user, pass, salt);
+    return register(user, hash);
+  }
+
+  /**
+   * Register a password with a hash.<br>
+   * The given hash will be stretched before save to the file.
+   *
+   * @param user
+   *          target user id
+   * @param hash
+   *          the hash
+   * @return 0=added / 1=updated / -1=error
+   */
+  public int registerByHash(String user, String hash) {
+    hash = stretch(hash, stretching);
+    return register(user, hash);
+  }
+
+  /**
+   * Remove a user record.
+   *
+   * @param user
+   *          user id
+   * @return true if the target is successfully deleted; false otherwise
+   */
+  public boolean remove(String user) {
+    String[] records;
+    try {
+      records = loadPasswordFile();
+    } catch (IOException e) {
+      return false;
+    }
+
+    StringBuilder sb = new StringBuilder();
+    boolean deleted = false;
+    for (int i = 0; i < records.length; i++) {
+      String record = records[i];
+      String[] fields = record.split(DELIMITER);
+      String uid = fields[0];
+      if (uid.equals(user)) {
+        deleted = true;
+      } else {
+        sb.append(record + LINE_SEPARATOR);
+      }
+    }
+
+    String newRecords = sb.toString();
+    try {
+      savePasswordFile(newRecords);
+    } catch (IOException ioe) {
+      deleted = false;
+      ioe.printStackTrace();
+    }
+
+    return deleted;
+  }
+
+  /**
+   * Register a password.
+   *
+   * @param user
+   *          target user id
+   * @param hash
+   *          non-stretched hash. hash(pass + user as salt)
+   * @return 0=added / 1=updated / -1=error
+   */
+  private int register(String user, String hash) {
+    if ((user == null) || (hash == null)) {
+      return -1;
+    }
+    String newRecord = user + DELIMITER + hash;
+    String[] records;
+    try {
+      records = loadPasswordFile();
+    } catch (IOException e) {
+      records = new String[0];
+    }
+
+    StringBuilder sb = new StringBuilder();
+    int result = 0;
+    for (int i = 0; i < records.length; i++) {
+      String record = records[i];
+      String[] fields = record.split(DELIMITER);
+      String uid = fields[0];
+      if (uid.equals(user)) {
+        result = 1;
+        sb.append(newRecord + LINE_SEPARATOR);
+      } else {
+        sb.append(record + LINE_SEPARATOR);
+      }
+    }
+
+    if (result == 0) {
+      sb.append(newRecord + LINE_SEPARATOR);
+    }
+
+    String newRecords = sb.toString();
+
+    try {
+      savePasswordFile(newRecords);
+    } catch (IOException ioe) {
+      result = -1;
+      ioe.printStackTrace();
+    }
+
+    return result;
   }
 
   /**
@@ -429,6 +455,23 @@ public class Auth {
   private byte[] getHashBytes(byte[] input, String algorithm) throws NoSuchAlgorithmException {
     MessageDigest md = MessageDigest.getInstance(algorithm);
     byte[] hash = md.digest(input);
+    return hash;
+  }
+
+  /**
+   * Stretches the hash.
+   *
+   * @param src
+   *          the source value
+   * @param n
+   *          number of times to stretch
+   * @return stretched value
+   */
+  private String stretch(String src, int n) {
+    String hash = src;
+    for (int i = 0; i < n; i++) {
+      hash = getHashString(hash);
+    }
     return hash;
   }
 
