@@ -1,19 +1,19 @@
 package com.libutil.auth.test;
 
-import com.libutil.auth.Auth;
+import com.libutil.auth.Authenticator;
 
 public class TestManager {
 
-  private static Auth auth;
+  private static Authenticator auth;
 
-  public static Auth initAuth() {
+  public static Authenticator initAuth() {
     int stretching = 1;
 
     System.out.println("stretching=" + stretching);
 
     String filePath = "C:/tmp/pass.txt";
     String hashAlgorithm = "SHA-256";
-    auth = new Auth(filePath, hashAlgorithm, stretching);
+    auth = new Authenticator(filePath, hashAlgorithm, stretching);
     return auth;
   }
 

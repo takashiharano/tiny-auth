@@ -1,10 +1,10 @@
 package com.libutil.auth.test;
 
-import com.libutil.auth.Auth;
+import com.libutil.auth.Authenticator;
 
 public class AuthOkTest {
 
-  private static Auth auth;
+  private static Authenticator auth;
 
   public static void main(String args[]) {
     test();

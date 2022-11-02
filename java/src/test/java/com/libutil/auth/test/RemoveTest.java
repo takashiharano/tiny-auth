@@ -1,10 +1,10 @@
 package com.libutil.auth.test;
 
-import com.libutil.auth.Auth;
+import com.libutil.auth.Authenticator;
 
 public class RemoveTest {
 
-  private static Auth auth;
+  private static Authenticator auth;
 
   public static void main(String args[]) {
     test();
@@ -14,7 +14,7 @@ public class RemoveTest {
     String filePath = "C:/tmp/pass.txt";
     String user = "user1";
 
-    auth = new Auth(filePath);
+    auth = new Authenticator(filePath);
     boolean removed = auth.remove(user);
     System.out.println(removed);
   }
