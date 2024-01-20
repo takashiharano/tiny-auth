@@ -106,8 +106,7 @@ public class Authenticator {
   }
 
   /**
-   * Initialize the module with the file path, hash algorithm, and the number of
-   * times to stretch.
+   * Initialize the module with the file path, hash algorithm, and the number of times to stretch.
    *
    * @param filePath
    *          the path of the user password file
